@@ -594,6 +594,38 @@ def test_javascript_bank_and_db() -> None:
     assert db.ok, db.failed
 
 
+@pytest.mark.parametrize("body", ["", "return undefined;"])
+@pytest.mark.parametrize("expected", ["", None, "undefined"])
+def test_javascript_undefined_return_reports_failure(
+    tmp_path: Path, body: str, expected: str | None
+) -> None:
+    src = tmp_path / "work.js"
+    src.write_text(
+        "module.exports = class InMemoryDatabase { set() { " + body + " } };",
+        encoding="utf-8",
+    )
+    cases = [{"id": "undefined-return", "calls": [{"m": "set", "a": [], "e": expected}]}]
+    report = run_script(
+        "in_memory_database",
+        "javascript",
+        1,
+        "work",
+        [
+            "node",
+            str(repo_root() / "langs" / "javascript" / "adapter.js"),
+            str(src),
+            "InMemoryDatabase",
+        ],
+        src=src,
+        cases=cases,
+    )
+    assert not report.ok
+    assert report.passed == 0
+    assert len(report.failed) == 1
+    assert report.failed[0].expected == expected
+    assert report.failed[0].actual == "undefined"
+
+
 def test_file_storage_python_and_js() -> None:
     py = run_python("file_storage", 4, "solution")
     assert py.ok, py.failed

@@ -105,7 +105,7 @@ function main() {
           index: i,
           method: call.m,
           expected: exp,
-          actual: actual,
+          actual: actual === undefined ? "undefined" : actual,
         });
         ok = false;
         break;
